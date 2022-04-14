@@ -6,27 +6,37 @@ import (
 	"os"
 )
 
-/**
- * Auto-generated code below aims at helping you parse
- * the standard input according to the problem statement.
- **/
-
-type Map [][]int
+/*
+**	Pos type for a position in the grid
+**/
 type Pos struct {
 	x int
 	y int
 }
-type V []Pos
 
+/*
+**	The grid game
+**/
+type Map [][]int
+
+/*
+**	Set a cell in the grid
+**/
 func (m Map) set(p Pos, v int) {
 	m[p.y][p.x] = v
 }
 
+/*
+**	Get a cell in the grid
+**/
 func (m Map) get(p Pos) int {
 	return m[p.y][p.x]
 }
 
-func isInLine(v int, p Pos, m Map) bool {
+/*
+**	Check if v exist in horizontal and vertical line
+**/
+func (m Map) isInLine(v int, p Pos) bool {
 	for i := 0; i < 9; i++ {
 		if (m[p.y][i] == v && p.x != i) || (m[i][p.x] == v && p.y != i) {
 			return true
@@ -35,6 +45,29 @@ func isInLine(v int, p Pos, m Map) bool {
 	return false
 }
 
+/*
+**	Check if v exist in the square
+**/
+func (m Map) isInSquare(v int, p Pos) bool {
+	var min Pos
+	var max Pos
+
+	min.x, max.x = findSquare(p.x)
+	min.y, max.y = findSquare(p.y)
+	for y := min.y; y != max.y; y++ {
+		for x := min.x; x != max.x; x++ {
+			if m[y][x] == v {
+				return true
+			}
+		}
+	}
+
+	return false
+}
+
+/*
+**	Get the min and max of the square we are in
+**/
 func findSquare(i int) (int, int) {
 	var min int
 	var max int
@@ -52,32 +85,14 @@ func findSquare(i int) (int, int) {
 	return min, max
 }
 
-func isInSquare(v int, p Pos, m Map) bool {
-	var min Pos
-	var max Pos
-
-	min.x, max.x = findSquare(p.x)
-	min.y, max.y = findSquare(p.y)
-	for y := min.y; y != max.y; y++ {
-		for x := min.x; x != max.x; x++ {
-			if m[y][x] == v {
-				return true
-			}
-		}
-	}
-
-	return false
-}
-
-func check(e error) {
-	if e != nil {
-			panic(e)
-	}
-}
-
+/*
+** get the grid form the file and convert it
+**/
 func getMap() (m Map) {
 	f, err := os.Open(os.Args[1])
-	check(err)
+	if err != nil {
+		panic(err)
+	}
 	scanner := bufio.NewScanner(f)
 	scanner.Buffer(make([]byte, 10), 10)
 	m = make([][]int, 9)
@@ -85,7 +100,7 @@ func getMap() (m Map) {
 		m[i] = make([]int, 9)
 		scanner.Scan()
 		line := scanner.Text()
-		_ = line // to avoid unused error
+		_ = line
 
 		for j := 0; j < 9; j++ {
 			m[i][j] = int(line[j]) - 48
@@ -95,14 +110,17 @@ func getMap() (m Map) {
 	return
 }
 
-func resolv(m Map, allZero V, i int) bool {
+/*
+** The recusiv function that solve the grid
+**/
+func resolv(m Map, allZero []Pos, i int) bool {
 	if i == len(allZero) {
 		return true
 	}
 
 	var v int = m.get(allZero[i])
 
-	for isInSquare(v, allZero[i], m) || isInLine(v, allZero[i], m) {
+	for m.isInSquare(v, allZero[i]) || m.isInLine(v, allZero[i]) {
 		v++
 		if v > 9 {
 			m.set(allZero[i], 0)
@@ -124,7 +142,10 @@ func resolv(m Map, allZero V, i int) bool {
 	return true
 }
 
-func getAllZero(m Map) (res V) {
+/*
+** Get all the zeros in the grid
+**/
+func getAllZero(m Map) (res []Pos) {
 	for y := 0; y != 9; y++ {
 		for x := 0; x != 9; x++ {
 			if m[y][x] == 0 {
